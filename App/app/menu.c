@@ -25,7 +25,6 @@
 #include "app/scanner.h"
 #include "audio.h"
 #include "board.h"
-#include "bsp/dp32g030/gpio.h"
 #include "driver/backlight.h"
 #include "driver/bk4819.h"
 #include "driver/eeprom.h"

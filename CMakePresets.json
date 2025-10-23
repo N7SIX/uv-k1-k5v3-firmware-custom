@@ -66,7 +66,7 @@
                 "ENABLE_AM_FIX_SHOW_DATA": false,
                 "ENABLE_AGC_SHOW_DATA": false,
                 "ENABLE_UART_RW_BK_REGS": false,
-                "ENABLE_SWD": false,
+                "ENABLE_SWD": true,
                 "VERSION_STRING_1": "v0.22",
                 "VERSION_STRING_2": "v4.2"
             }

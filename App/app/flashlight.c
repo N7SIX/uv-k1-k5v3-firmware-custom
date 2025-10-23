@@ -4,10 +4,9 @@
 #include "app/flashlight.h"
 #include <stdbool.h>
 
-#define FLASHLIGHT_PIN      GPIO_PIN_MASK(GPIOC_PIN_FLASHLIGHT)
-static inline void Flashlight_TurnOn(){ LL_GPIO_SetOutputPin(GPIOC, FLASHLIGHT_PIN); }
-static inline void Flashlight_TurnOff(){ LL_GPIO_ResetOutputPin(GPIOC, FLASHLIGHT_PIN); }
-static inline void Flashlight_Toggle(){ LL_GPIO_TogglePin(GPIOC, FLASHLIGHT_PIN); }
+static inline void Flashlight_TurnOn(){ GPIO_SetOutputPin(GPIO_PIN_FLASHLIGHT); }
+static inline void Flashlight_TurnOff(){ GPIO_ResetOutputPin(GPIO_PIN_FLASHLIGHT); }
+static inline void Flashlight_Toggle(){ GPIO_TogglePin(GPIO_PIN_FLASHLIGHT); }
 
 #if !defined(ENABLE_FEAT_F4HWN) || defined(ENABLE_FEAT_F4HWN_RESCUE_OPS)
     enum FlashlightMode_t  gFlashLightState;

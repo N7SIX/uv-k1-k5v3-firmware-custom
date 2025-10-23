@@ -137,6 +137,7 @@ void BACKLIGHT_TurnOn(void)
 
 void BACKLIGHT_TurnOff()
 {
+    GPIO_TurnOffBacklight();
 #ifdef ENABLE_BLMIN_TMP_OFF
     register uint8_t tmp;
 

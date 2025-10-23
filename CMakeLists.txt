@@ -94,18 +94,19 @@ add_custom_command(
 )
 
 # Pack
-if(ENABLE_FEAT_F4HWN)
-    add_custom_command(
-        TARGET ${EXE_NAME}
-        POST_BUILD
-        COMMAND python ${CMAKE_SOURCE_DIR}/fw-pack.py ${TARGET_ELF} ${AUTHOR_STRING_2} ${VERSION_STRING_2} ${EXE_NAME}.packed.bin
-        COMMENT "Generating packed binary"
-    )
-else()
-    add_custom_command(
-        TARGET ${EXE_NAME}
-        POST_BUILD
-        COMMAND python ${CMAKE_SOURCE_DIR}/fw-pack.py ${TARGET_ELF} ${AUTHOR_STRING} ${VERSION_STRING} ${EXE_NAME}.packed.bin
-        COMMENT "Generating packed binary"
-    )
-endif()
+# TODO: Incorparate venv?
+# if(ENABLE_FEAT_F4HWN)
+#     add_custom_command(
+#         TARGET ${EXE_NAME}
+#         POST_BUILD
+#         COMMAND python ${CMAKE_SOURCE_DIR}/fw-pack.py ${TARGET_ELF} ${AUTHOR_STRING_2} ${VERSION_STRING_2} ${EXE_NAME}.packed.bin
+#         COMMENT "Generating packed binary"
+#     )
+# else()
+#     add_custom_command(
+#         TARGET ${EXE_NAME}
+#         POST_BUILD
+#         COMMAND python ${CMAKE_SOURCE_DIR}/fw-pack.py ${TARGET_ELF} ${AUTHOR_STRING} ${VERSION_STRING} ${EXE_NAME}.packed.bin
+#         COMMENT "Generating packed binary"
+#     )
+# endif()

@@ -7,14 +7,15 @@ target_compile_definitions(App INTERFACE PRINTF_INCLUDE_CONFIG_H)
 target_sources(App INTERFACE
     # Drivers
     # driver/adc.c
-    # driver/backlight.c
-    # driver/bk4819.c
+    driver/backlight.c
+    driver/bk4819.c
     # driver/eeprom.c
+    driver/storage.c
     driver/gpio.c
-    # driver/i2c.c
+    driver/i2c.c
     driver/keyboard.c
     # driver/spi.c
-    # driver/st7565.c
+    driver/st7565.c
     driver/system.c
     driver/systick.c
     # Main
@@ -26,6 +27,7 @@ target_sources(App INTERFACE
     app/generic.c
     app/main.c
     app/menu.c
+    app/scanner.c
     audio.c
     bitmaps.c
     board.c

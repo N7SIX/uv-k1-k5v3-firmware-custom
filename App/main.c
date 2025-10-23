@@ -42,8 +42,6 @@
 
 #include "app/app.h"
 #include "app/dtmf.h"
-#include "bsp/dp32g030/gpio.h"
-#include "bsp/dp32g030/syscon.h"
 
 #include "driver/backlight.h"
 #include "driver/bk4819.h"
@@ -177,7 +175,7 @@ void Main(void)
     }
 
     // wait for user to release all butts before moving on
-    if (!GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT) ||
+    if (GPIO_IsPttPressed() ||
          KEYBOARD_Poll() != KEY_INVALID ||
          BootMode != BOOT_MODE_NORMAL)
     {   // keys are pressed
@@ -187,7 +185,7 @@ void Main(void)
         // 500ms
         for (int i = 0; i < 50;)
         {
-            i = (GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT) && KEYBOARD_Poll() == KEY_INVALID) ? i + 1 : 0;
+            i = (!GPIO_IsPttPressed() && KEYBOARD_Poll() == KEY_INVALID) ? i + 1 : 0;
             SYSTEM_DelayMs(10);
         }
         gKeyReading0 = KEY_INVALID;
@@ -250,7 +248,7 @@ void Main(void)
 
         BOOT_ProcessMode(BootMode);
 
-        GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
+        // GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
 
         gUpdateStatus = true;
 

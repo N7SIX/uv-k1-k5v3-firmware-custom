@@ -23,7 +23,7 @@
 #include "py32f071_ll_gpio.h"
 
 #define GPIO_MAKE_PIN(Port, PinMask)    ((uint32_t)((((uint32_t)(Port)) << 16) | (0xffff & (PinMask))))
-#define GPIO_PORT(Pin)                  ((GPIO_TypeDef *)((Pin) >> 16))
+#define GPIO_PORT(Pin)                  ((GPIO_TypeDef *)(IOPORT_BASE + ((Pin) >> 16)))
 #define GPIO_PIN_MASK(Pin)              (0xffff & (Pin))
 
 enum GPIO_PINS

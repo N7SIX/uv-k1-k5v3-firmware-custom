@@ -24,7 +24,8 @@
 #include "py32f071_ll_usart.h"
 #include "driver/uart.h"
 
-#define _DMA_CHANNEL LL_DMA_CHANNEL_2
+#define USARTx USART1
+#define DMA_CHANNEL LL_DMA_CHANNEL_2
 
 static bool UART_IsLogEnabled;
 uint8_t UART_DMA_Buffer[256];
@@ -57,14 +58,14 @@ void UART_Init(void)
     // DMA
     do
     {
-        LL_DMA_DisableChannel(DMA1, _DMA_CHANNEL);
+        LL_DMA_DisableChannel(DMA1, DMA_CHANNEL);
 
         LL_DMA_InitTypeDef DMA_InitStruct;
         LL_DMA_StructInit(&DMA_InitStruct);
 
         DMA_InitStruct.Direction = LL_DMA_DIRECTION_PERIPH_TO_MEMORY;
         DMA_InitStruct.Mode = LL_DMA_MODE_CIRCULAR;
-        DMA_InitStruct.PeriphOrM2MSrcAddress = LL_USART_DMA_GetRegAddr(USART1);
+        DMA_InitStruct.PeriphOrM2MSrcAddress = LL_USART_DMA_GetRegAddr(USARTx);
         DMA_InitStruct.PeriphOrM2MSrcIncMode = LL_DMA_PERIPH_NOINCREMENT;
         DMA_InitStruct.PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_BYTE;
         DMA_InitStruct.MemoryOrM2MDstAddress = (uint32_t)UART_DMA_Buffer;
@@ -73,9 +74,9 @@ void UART_Init(void)
         DMA_InitStruct.NbData = sizeof(UART_DMA_Buffer);
         DMA_InitStruct.Priority = LL_DMA_PRIORITY_HIGH;
 
-        LL_DMA_Init(DMA1, _DMA_CHANNEL, &DMA_InitStruct);
+        LL_DMA_Init(DMA1, DMA_CHANNEL, &DMA_InitStruct);
 
-        LL_SYSCFG_SetDMARemap(DMA1, _DMA_CHANNEL, LL_SYSCFG_DMA_MAP_USART1_RD);
+        LL_SYSCFG_SetDMARemap(DMA1, DMA_CHANNEL, LL_SYSCFG_DMA_MAP_USART1_RD);
 
     } while (0);
 
@@ -85,22 +86,22 @@ void UART_Init(void)
     // USART
     do
     {
-        LL_USART_Disable(USART1);
+        LL_USART_Disable(USARTx);
 
         LL_USART_InitTypeDef USART_InitStruct;
         LL_USART_StructInit(&USART_InitStruct);
 
         USART_InitStruct.BaudRate = 38400;
         USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
-        LL_USART_Init(USART1, &USART_InitStruct);
+        LL_USART_Init(USARTx, &USART_InitStruct);
 
-        LL_USART_EnableDMAReq_RX(USART1);
+        LL_USART_EnableDMAReq_RX(USARTx);
 
     } while (0);
 
-    LL_DMA_EnableChannel(DMA1, _DMA_CHANNEL);
-    LL_USART_Enable(USART1);
-    LL_USART_TransmitData8(USART1, 0);
+    LL_DMA_EnableChannel(DMA1, DMA_CHANNEL);
+    LL_USART_Enable(USARTx);
+    LL_USART_TransmitData8(USARTx, 0);
 }
 
 void UART_Send(const void *pBuffer, uint32_t Size)
@@ -110,9 +111,9 @@ void UART_Send(const void *pBuffer, uint32_t Size)
 
     for (i = 0; i < Size; i++)
     {
-        while (!LL_USART_IsActiveFlag_TXE(USART1))
+        while (!LL_USART_IsActiveFlag_TXE(USARTx))
             ;
-        LL_USART_TransmitData8(USART1, pData[i]);
+        LL_USART_TransmitData8(USARTx, pData[i]);
     }
 }
 
