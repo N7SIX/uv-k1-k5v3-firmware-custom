@@ -24,7 +24,7 @@
 #include "audio.h"
 #include "driver/bk4819.h"
 #include "driver/crc.h"
-#include "driver/py25q16.h"
+#include "driver/eeprom.h"
 #include "frequencies.h"
 #include "misc.h"
 #include "radio.h"
