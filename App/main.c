@@ -53,6 +53,8 @@
     #include "driver/uart.h"
 #endif
 
+#include "driver/vcp.h"
+
 #include "helper/battery.h"
 #include "helper/boot.h"
 
@@ -82,6 +84,8 @@ void Main(void)
     UART_Init();
     UART_Send(UART_Version, strlen(UART_Version));
 #endif
+
+    VCP_Init();
 
     // Not implementing authentic device checks
 

@@ -61,6 +61,7 @@ message("EXE_NAME = " ${EXE_NAME})
 add_executable(${EXE_NAME})
 
 add_subdirectory(Drivers)
+add_subdirectory(Middlewares)
 add_subdirectory(Core)
 add_subdirectory(App)
 

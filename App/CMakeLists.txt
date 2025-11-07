@@ -1,7 +1,7 @@
 
 add_library(App INTERFACE)
 target_include_directories(App INTERFACE .)
-target_link_libraries(App INTERFACE PY32F071_Driver)
+target_link_libraries(App INTERFACE PY32F071_Driver CherryUSB)
 target_compile_definitions(App INTERFACE PRINTF_INCLUDE_CONFIG_H)
 
 target_sources(App INTERFACE
@@ -15,6 +15,7 @@ target_sources(App INTERFACE
     driver/st7565.c
     driver/system.c
     driver/systick.c
+    driver/vcp.c
     # Main
     app/action.c
     app/app.c
@@ -51,6 +52,9 @@ target_sources(App INTERFACE
     main.c
     external/printf/printf.c
 )
+
+target_include_directories(App INTERFACE usb)
+target_sources(App INTERFACE usb/usbd_cdc_if.c)
 
 macro(enable_feature feature)
     if(${feature})
