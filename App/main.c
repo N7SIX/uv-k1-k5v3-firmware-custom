@@ -52,9 +52,9 @@
 #ifdef ENABLE_UART
     #include "driver/uart.h"
 #endif
-
+#ifdef ENABLE_USB
 #include "driver/vcp.h"
-
+#endif
 #include "helper/battery.h"
 #include "helper/boot.h"
 
@@ -84,8 +84,9 @@ void Main(void)
     UART_Init();
     UART_Send(UART_Version, strlen(UART_Version));
 #endif
-
+#ifdef ENABLE_USB
     VCP_Init();
+#endif
 
     // Not implementing authentic device checks
 

@@ -31,7 +31,15 @@
 #include "driver/crc.h"
 #include "driver/eeprom.h"
 #include "driver/gpio.h"
+
+#if defined(ENABLE_UART)
 #include "driver/uart.h"
+#endif
+
+#if defined(ENABLE_USB)
+#include "driver/vcp.h"
+#endif
+
 #include "functions.h"
 #include "misc.h"
 #include "settings.h"
@@ -43,9 +51,11 @@
 
 #define UNUSED(x) (void)(x)
 
-#define DMA_INDEX(x, y) (((x) + (y)) % sizeof(UART_DMA_Buffer))
+#define DMA_INDEX(x, y, z) (((x) + (y)) % (z))
 
-#define DMA_CHANNEL LL_DMA_CHANNEL_2
+#if defined(ENABLE_UART)
+    #define DMA_CHANNEL LL_DMA_CHANNEL_2
+#endif
 
 typedef struct {
     uint16_t ID;
@@ -152,7 +162,7 @@ static const uint8_t Obfuscation[16] =
     0x16, 0x6C, 0x14, 0xE6, 0x2E, 0x91, 0x0D, 0x40, 0x21, 0x35, 0xD5, 0x40, 0x13, 0x03, 0xE9, 0x80
 };
 
-static union
+typedef union
 {
     uint8_t Buffer[256];
     struct
@@ -160,14 +170,24 @@ static union
         Header_t Header;
         uint8_t Data[252];
     };
-} UART_Command;
+} UART_Command_t;
 
-static uint32_t Timestamp;
-static uint16_t gUART_WriteIndex;
+
+#if defined(ENABLE_UART)
+    static uint32_t UART_Timestamp;
+    static UART_Command_t UART_Command;
+    static uint16_t gUART_WriteIndex;
+#endif
+#if defined(ENABLE_USB)
+    static uint32_t VCP_Timestamp;
+    static UART_Command_t VCP_Command;
+    static uint16_t VCP_ReadIndex;
+#endif
+
 // static bool     bIsEncrypted = true;
 #define bIsEncrypted true
 
-static void SendReply(void *pReply, uint16_t Size)
+static void SendReply(uint32_t Port, void *pReply, uint16_t Size)
 {
     Header_t Header;
     Footer_t Footer;
@@ -182,8 +202,22 @@ static void SendReply(void *pReply, uint16_t Size)
 
     Header.ID = 0xCDAB;
     Header.Size = Size;
-    UART_Send(&Header, sizeof(Header));
-    UART_Send(pReply, Size);
+
+    if(0) {}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        UART_Send(&Header, sizeof(Header));
+        UART_Send(pReply, Size);
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        VCP_Send((uint8_t *)&Header, sizeof(Header));
+        VCP_Send(pReply, Size);
+    }
+#endif
 
     if (bIsEncrypted)
     {
@@ -197,10 +231,23 @@ static void SendReply(void *pReply, uint16_t Size)
     }
     Footer.ID = 0xBADC;
 
-    UART_Send(&Footer, sizeof(Footer));
+    if(0) {}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        UART_Send(&Footer, sizeof(Footer));
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        VCP_Send((uint8_t *)&Footer, sizeof(Footer));
+    }
+#endif
+
 }
 
-static void SendVersion(void)
+static void SendVersion(uint32_t Port)
 {
     REPLY_0514_t Reply;
 
@@ -214,7 +261,7 @@ static void SendVersion(void)
     Reply.Data.Challenge[2] = gChallenge[2];
     Reply.Data.Challenge[3] = gChallenge[3];
 
-    SendReply(&Reply, sizeof(Reply));
+    SendReply(Port, &Reply, sizeof(Reply));
 }
 
 #ifndef ENABLE_FEAT_F4HWN
@@ -243,30 +290,62 @@ static bool IsBadChallenge(const uint32_t *pKey, const uint32_t *pIn, const uint
 
 // session init, sends back version info and state
 // timestamp is a session id really
-static void CMD_0514(const uint8_t *pBuffer)
+static void CMD_0514(uint32_t Port, const uint8_t *pBuffer)
 {
     const CMD_0514_t *pCmd = (const CMD_0514_t *)pBuffer;
 
-    Timestamp = pCmd->Timestamp;
+    if(0) {}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        UART_Timestamp = pCmd->Timestamp;
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        VCP_Timestamp = pCmd->Timestamp;
+    }
+#endif
 
-    #ifdef ENABLE_FMRADIO
-        gFmRadioCountdown_500ms = fm_radio_countdown_500ms;
-    #endif
+#ifdef ENABLE_FMRADIO
+    gFmRadioCountdown_500ms = fm_radio_countdown_500ms;
+#endif
 
     gSerialConfigCountDown_500ms = 12; // 6 sec
     
     // turn the LCD backlight off
     BACKLIGHT_TurnOff();
 
-    SendVersion();
+    SendVersion(Port);
 }
 
 // read eeprom
-static void CMD_051B(const uint8_t *pBuffer)
+static void CMD_051B(uint32_t Port, const uint8_t *pBuffer)
 {
     const CMD_051B_t *pCmd = (const CMD_051B_t *)pBuffer;
     REPLY_051B_t      Reply;
     bool              bLocked = false;
+
+    uint32_t Timestamp = 0;
+
+    if(0) {}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        Timestamp = UART_Timestamp;
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        Timestamp = VCP_Timestamp;
+    }
+#endif
+    else
+    {
+        return;
+    }
 
     if (pCmd->Timestamp != Timestamp)
         return;
@@ -291,16 +370,36 @@ static void CMD_051B(const uint8_t *pBuffer)
         EEPROM_ReadBuffer(pCmd->Offset, Reply.Data.Data, pCmd->Size);
     }
     
-    SendReply(&Reply, pCmd->Size + 8);
+    SendReply(Port, &Reply, pCmd->Size + 8);
 }
 
 // write eeprom
-static void CMD_051D(const uint8_t *pBuffer)
+static void CMD_051D(uint32_t Port, const uint8_t *pBuffer)
 {
     const CMD_051D_t *pCmd = (const CMD_051D_t *)pBuffer;
     REPLY_051D_t Reply;
     bool bReloadEeprom;
     bool bIsLocked;
+
+    uint32_t Timestamp = 0;
+
+    if(0) {}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        Timestamp = UART_Timestamp;
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        Timestamp = VCP_Timestamp;
+    }
+#endif
+    else
+    {
+        return;
+    }
 
     if (pCmd->Timestamp != Timestamp)
         return;
@@ -340,12 +439,12 @@ static void CMD_051D(const uint8_t *pBuffer)
             SETTINGS_InitEEPROM();
     }
 
-    SendReply(&Reply, sizeof(Reply));
+    SendReply(Port, &Reply, sizeof(Reply));
 }
 
 #ifdef ENABLE_EXTRA_UART_CMD
 // read RSSI
-static void CMD_0527(void)
+static void CMD_0527(uint32_t Port)
 {
     REPLY_0527_t Reply;
 
@@ -355,11 +454,11 @@ static void CMD_0527(void)
     Reply.Data.ExNoiseIndicator = BK4819_ReadRegister(BK4819_REG_65) & 0x007F;
     Reply.Data.GlitchIndicator  = BK4819_ReadRegister(BK4819_REG_63);
 
-    SendReply(&Reply, sizeof(Reply));
+    SendReply(Port, &Reply, sizeof(Reply));
 }
 
 // read ADC
-static void CMD_0529(void)
+static void CMD_0529(uint32_t Port)
 {
     REPLY_0529_t Reply;
 
@@ -369,11 +468,11 @@ static void CMD_0529(void)
     // Original doesn't actually send current!
     BOARD_ADC_GetBatteryInfo(&Reply.Data.Voltage, &Reply.Data.Current);
 
-    SendReply(&Reply, sizeof(Reply));
+    SendReply(Port, &Reply, sizeof(Reply));
 }
 
 #ifndef ENABLE_FEAT_F4HWN
-static void CMD_052D(const uint8_t *pBuffer)
+static void CMD_052D(uint32_t Port, const uint8_t *pBuffer)
 {
     const CMD_052D_t *pCmd = (const CMD_052D_t *)pBuffer;
     REPLY_052D_t      Reply;
@@ -411,7 +510,7 @@ static void CMD_052D(const uint8_t *pBuffer)
     gIsLocked            = bIsLocked;
     Reply.Data.bIsLocked = bIsLocked;
 
-    SendReply(&Reply, sizeof(Reply));
+    SendReply(Port, &Reply, sizeof(Reply));
 }
 #endif
 
@@ -420,7 +519,7 @@ static void CMD_052D(const uint8_t *pBuffer)
 // this command also disables dual watch, crossband, 
 // DTMF side tones, freq reverse, PTT ID, DTMF decoding, frequency offset
 // exits power save, sets main VFO to upper,
-static void CMD_052F(const uint8_t *pBuffer)
+static void CMD_052F(uint32_t Port, const uint8_t *pBuffer)
 {
     const CMD_052F_t *pCmd = (const CMD_052F_t *)pBuffer;
 
@@ -446,17 +545,29 @@ static void CMD_052F(const uint8_t *pBuffer)
 
     gSerialConfigCountDown_500ms = 12; // 6 sec
 
-    Timestamp = pCmd->Timestamp;
+    if(0) {}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        UART_Timestamp = pCmd->Timestamp;
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        VCP_Timestamp = pCmd->Timestamp;
+    }
+#endif
 
     // turn the LCD backlight off
     BACKLIGHT_TurnOff();
 
-    SendVersion();
+    SendVersion(Port);
 }
 #endif
 
 #ifdef ENABLE_UART_RW_BK_REGS
-static void CMD_0601_ReadBK4819Reg(const uint8_t *pBuffer)
+static void CMD_0601_ReadBK4819Reg(uint32_t Port, const uint8_t *pBuffer)
 {
     typedef struct  __attribute__((__packed__)) {
         Header_t header;
@@ -477,7 +588,7 @@ static void CMD_0601_ReadBK4819Reg(const uint8_t *pBuffer)
     reply.header.Size = sizeof(reply.data);
     reply.data.reg = cmd->reg;
     reply.data.value = BK4819_ReadRegister(cmd->reg);
-    SendReply(&reply, sizeof(reply));
+    SendReply(Port, &reply, sizeof(reply));
 }
 
 static void CMD_0602_WriteBK4819Reg(const uint8_t *pBuffer)
@@ -493,141 +604,193 @@ static void CMD_0602_WriteBK4819Reg(const uint8_t *pBuffer)
 }
 #endif
 
-bool UART_IsCommandAvailable(void)
+bool UART_IsCommandAvailable(uint32_t Port)
 {
     uint16_t Index;
     uint16_t TailIndex;
     uint16_t Size;
     uint16_t Crc;
     uint16_t CommandLength;
-    uint16_t DmaLength = sizeof(UART_DMA_Buffer) - LL_DMA_GetDataLength(DMA1, DMA_CHANNEL);
+    uint16_t DmaLength;
+    uint8_t *ReadBuf;
+    uint16_t ReadBufSize;
+    uint16_t *pReadPointer;
+    UART_Command_t *pUART_Command;
+
+    if(0){}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        DmaLength = sizeof(UART_DMA_Buffer) - LL_DMA_GetDataLength(DMA1, DMA_CHANNEL);
+        ReadBuf = UART_DMA_Buffer;
+        ReadBufSize = sizeof(UART_DMA_Buffer);
+        pReadPointer = &gUART_WriteIndex;
+        pUART_Command = &UART_Command;
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        DmaLength = VCP_RxBufPointer;
+        ReadBuf = VCP_RxBuf;
+        ReadBufSize = sizeof(VCP_RxBuf);
+        pReadPointer = &VCP_ReadIndex;
+        pUART_Command = &VCP_Command;
+    }
+#endif
+    else
+    {
+        return false;
+    }
 
     while (1)
     {
-        if (gUART_WriteIndex == DmaLength)
+        if ((*pReadPointer) == DmaLength)
             return false;
 
-        while (gUART_WriteIndex != DmaLength && UART_DMA_Buffer[gUART_WriteIndex] != 0xABU)
-            gUART_WriteIndex = DMA_INDEX(gUART_WriteIndex, 1);
+        while ((*pReadPointer) != DmaLength && ReadBuf[*pReadPointer] != 0xABU)
+            *pReadPointer = DMA_INDEX((*pReadPointer), 1, ReadBufSize);
 
-        if (gUART_WriteIndex == DmaLength)
+        if ((*pReadPointer) == DmaLength)
             return false;
 
-        if (gUART_WriteIndex < DmaLength)
-            CommandLength = DmaLength - gUART_WriteIndex;
+        if ((*pReadPointer) < DmaLength)
+            CommandLength = DmaLength - (*pReadPointer);
         else
-            CommandLength = (DmaLength + sizeof(UART_DMA_Buffer)) - gUART_WriteIndex;
+            CommandLength = (DmaLength + ReadBufSize) - (*pReadPointer);
 
         if (CommandLength < 8)
             return 0;
 
-        if (UART_DMA_Buffer[DMA_INDEX(gUART_WriteIndex, 1)] == 0xCD)
+        if (ReadBuf[DMA_INDEX(*pReadPointer, 1, ReadBufSize)] == 0xCD)
             break;
 
-        gUART_WriteIndex = DMA_INDEX(gUART_WriteIndex, 1);
+        *pReadPointer = DMA_INDEX(*pReadPointer, 1, ReadBufSize);
     }
 
-    Index = DMA_INDEX(gUART_WriteIndex, 2);
-    Size  = (UART_DMA_Buffer[DMA_INDEX(Index, 1)] << 8) | UART_DMA_Buffer[Index];
+    Index = DMA_INDEX(*pReadPointer, 2, ReadBufSize);
+    Size  = (ReadBuf[DMA_INDEX(Index, 1, ReadBufSize)] << 8) | ReadBuf[Index];
 
-    if ((Size + 8u) > sizeof(UART_DMA_Buffer))
+    if ((Size + 8u) > ReadBufSize)
     {
-        gUART_WriteIndex = DmaLength;
+        *pReadPointer = DmaLength;
         return false;
     }
 
     if (CommandLength < (Size + 8))
         return false;
 
-    Index     = DMA_INDEX(Index, 2);
-    TailIndex = DMA_INDEX(Index, Size + 2);
+    Index     = DMA_INDEX(Index, 2, ReadBufSize);
+    TailIndex = DMA_INDEX(Index, Size + 2, ReadBufSize);
 
-    if (UART_DMA_Buffer[TailIndex] != 0xDC || UART_DMA_Buffer[DMA_INDEX(TailIndex, 1)] != 0xBA)
+    if (ReadBuf[TailIndex] != 0xDC || ReadBuf[DMA_INDEX(TailIndex, 1, ReadBufSize)] != 0xBA)
     {
-        gUART_WriteIndex = DmaLength;
+        *pReadPointer = DmaLength;
         return false;
     }
 
     if (TailIndex < Index)
     {
-        const uint16_t ChunkSize = sizeof(UART_DMA_Buffer) - Index;
-        memcpy(UART_Command.Buffer, UART_DMA_Buffer + Index, ChunkSize);
-        memcpy(UART_Command.Buffer + ChunkSize, UART_DMA_Buffer, TailIndex);
+        const uint16_t ChunkSize = ReadBufSize - Index;
+        memcpy(pUART_Command->Buffer, ReadBuf + Index, ChunkSize);
+        memcpy(pUART_Command->Buffer + ChunkSize, ReadBuf, TailIndex);
     }
     else
-        memcpy(UART_Command.Buffer, UART_DMA_Buffer + Index, TailIndex - Index);
+        memcpy(pUART_Command->Buffer, ReadBuf + Index, TailIndex - Index);
 
-    TailIndex = DMA_INDEX(TailIndex, 2);
-    if (TailIndex < gUART_WriteIndex)
+    TailIndex = DMA_INDEX(TailIndex, 2, ReadBufSize);
+    if (TailIndex < (*pReadPointer))
     {
-        memset(UART_DMA_Buffer + gUART_WriteIndex, 0, sizeof(UART_DMA_Buffer) - gUART_WriteIndex);
-        memset(UART_DMA_Buffer, 0, TailIndex);
+        memset(ReadBuf + (*pReadPointer), 0, ReadBufSize - (*pReadPointer));
+        memset(ReadBuf, 0, TailIndex);
     }
     else
-        memset(UART_DMA_Buffer + gUART_WriteIndex, 0, TailIndex - gUART_WriteIndex);
+        memset(ReadBuf + (*pReadPointer), 0, TailIndex - (*pReadPointer));
 
-    gUART_WriteIndex = TailIndex;
+    *pReadPointer = TailIndex;
 
-    // if (UART_Command.Header.ID == 0x0514)
-    //     bIsEncrypted = false;
+    /* --
+    if (pUART_Command->Header.ID == 0x0514)
+        bIsEncrypted = false;
 
-    // if (UART_Command.Header.ID == 0x6902)
-    //     bIsEncrypted = true;
+    if (pUART_Command->Header.ID == 0x6902)
+        bIsEncrypted = true;
+    -- */
 
     if (bIsEncrypted)
     {
         unsigned int i;
         for (i = 0; i < (Size + 2u); i++)
-            UART_Command.Buffer[i] ^= Obfuscation[i % 16];
+            pUART_Command->Buffer[i] ^= Obfuscation[i % 16];
     }
-    
-    Crc = UART_Command.Buffer[Size] | (UART_Command.Buffer[Size + 1] << 8);
 
-    return (CRC_Calculate(UART_Command.Buffer, Size) != Crc) ? false : true;
+    Crc = pUART_Command->Buffer[Size] | (pUART_Command->Buffer[Size + 1] << 8);
+
+    return CRC_Calculate(pUART_Command->Buffer, Size) == Crc;
 }
 
-void UART_HandleCommand(void)
+void UART_HandleCommand(uint32_t Port)
 {
-    switch (UART_Command.Header.ID)
+    UART_Command_t *pUART_Command;
+
+    if (0) {}
+#if defined(ENABLE_UART)
+    else if (Port == UART_PORT_UART)
+    {
+        pUART_Command = &UART_Command;
+    }
+#endif
+#if defined(ENABLE_USB)
+    else if (Port == UART_PORT_VCP)
+    {
+        pUART_Command = &VCP_Command;
+    }
+#endif
+    else
+    {
+        return;
+    }
+
+    switch (pUART_Command->Header.ID)
     {
         case 0x0514:
-            CMD_0514(UART_Command.Buffer);
+            CMD_0514(Port, pUART_Command->Buffer);
             break;
-    
+
         case 0x051B:
-            CMD_051B(UART_Command.Buffer);
+            CMD_051B(Port, pUART_Command->Buffer);
             break;
-    
+
         case 0x051D:
-            CMD_051D(UART_Command.Buffer);
+            CMD_051D(Port, pUART_Command->Buffer);
             break;
-    
+
         case 0x051F:    // Not implementing non-authentic command
             break;
-    
+
         case 0x0521:    // Not implementing non-authentic command
             break;
 
 #ifdef ENABLE_EXTRA_UART_CMD
         case 0x0527:
-            CMD_0527();
+            CMD_0527(Port);
             break;
-    
+
         case 0x0529:
-            CMD_0529();
+            CMD_0529(Port);
             break;
-            
+
         #ifndef ENABLE_FEAT_F4HWN
             case 0x052D:
-                CMD_052D(UART_Command.Buffer);
+                CMD_052D(Port, pUART_Command->Buffer);
                 break;
         #endif
-    
+
         case 0x052F:
-            CMD_052F(UART_Command.Buffer);
+            CMD_052F(Port, pUART_Command->Buffer);
             break;
 #endif
-    
+
         case 0x05DD: // reset
             #if defined(ENABLE_OVERLAY)
                 overlay_FLASH_RebootToBootloader();
@@ -635,17 +798,18 @@ void UART_HandleCommand(void)
                 NVIC_SystemReset();
             #endif
             break;
-            
+
 #ifdef ENABLE_UART_RW_BK_REGS
         case 0x0601:
-            CMD_0601_ReadBK4819Reg(UART_Command.Buffer);
+            CMD_0601_ReadBK4819Reg(Port, pUART_Command->Buffer);
             break;
         
         case 0x0602:
-            CMD_0602_WriteBK4819Reg(UART_Command.Buffer);
+            CMD_0602_WriteBK4819Reg(pUART_Command->Buffer);
             break;
 #endif
-    }
+    } // switch
+
     #ifdef ENABLE_FEAT_F4HWN_SCREENSHOT
         gUART_LockScreenshot = 20; // lock screenshot
     #endif

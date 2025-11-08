@@ -1,7 +1,7 @@
 
 add_library(App INTERFACE)
 target_include_directories(App INTERFACE .)
-target_link_libraries(App INTERFACE PY32F071_Driver CherryUSB)
+target_link_libraries(App INTERFACE PY32F071_Driver)
 target_compile_definitions(App INTERFACE PRINTF_INCLUDE_CONFIG_H)
 
 target_sources(App INTERFACE
@@ -15,7 +15,6 @@ target_sources(App INTERFACE
     driver/st7565.c
     driver/system.c
     driver/systick.c
-    driver/vcp.c
     # Main
     app/action.c
     app/app.c
@@ -53,8 +52,6 @@ target_sources(App INTERFACE
     external/printf/printf.c
 )
 
-target_include_directories(App INTERFACE usb)
-target_sources(App INTERFACE usb/usbd_cdc_if.c)
 
 macro(enable_feature feature)
     if(${feature})
@@ -88,10 +85,32 @@ if(NOT SQL_TONE)
 endif()
 target_compile_definitions(App INTERFACE SQL_TONE=${SQL_TONE})
 
-if(ENABLE_AIRCOPY OR ENABLE_UART)
+if(ENABLE_AIRCOPY OR ENABLE_UART OR ENABLE_USB)
     target_sources(App INTERFACE 
         driver/crc.c
         driver/eeprom_compat.c
+    )
+endif()
+
+enable_feature(ENABLE_UART
+    driver/uart.c 
+    app/uart.c
+    # driver/aes.c
+)
+
+if(ENABLE_USB)
+    target_link_libraries(App INTERFACE CherryUSB)
+    target_compile_definitions(App INTERFACE ENABLE_USB)
+    target_include_directories(App INTERFACE usb)
+    target_sources(App INTERFACE 
+        driver/vcp.c
+        usb/usbd_cdc_if.c
+    )
+endif()
+
+if(ENABLE_UART OR ENABLE_USB)
+    target_sources(App INTERFACE 
+        app/uart.c
     )
 endif()
 
@@ -101,11 +120,6 @@ enable_feature(ENABLE_FMRADIO
     driver/bk1080.c 
     app/fm.c 
     ui/fmradio.c
-)
-enable_feature(ENABLE_UART
-    driver/uart.c 
-    app/uart.c
-    # driver/aes.c
 )
 enable_feature(ENABLE_AIRCOPY
     app/aircopy.c 

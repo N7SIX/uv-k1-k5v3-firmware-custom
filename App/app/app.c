@@ -37,7 +37,7 @@
 #include "app/main.h"
 #include "app/menu.h"
 #include "app/scanner.h"
-#ifdef ENABLE_UART
+#if defined(ENABLE_UART) || defined(ENABLE_USB)
     #include "app/uart.h"
     #include "scheduler.h"
 #endif
@@ -1364,11 +1364,17 @@ void APP_TimeSlice10ms(void)
 #endif
 
 #ifdef ENABLE_UART
-    if (UART_IsCommandAvailable()) {
-        // __disable_irq();
+    if (UART_IsCommandAvailable(UART_PORT_UART)) {
         SCHEDULER_Disable();
-        UART_HandleCommand();
-        // __enable_irq();
+        UART_HandleCommand(UART_PORT_UART);
+        SCHEDULER_Enable();
+    }
+#endif
+
+#ifdef ENABLE_USB
+    if (UART_IsCommandAvailable(UART_PORT_VCP)) {
+        SCHEDULER_Disable();
+        UART_HandleCommand(UART_PORT_VCP);
         SCHEDULER_Enable();
     }
 #endif

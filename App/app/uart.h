@@ -1,4 +1,5 @@
-/* Copyright 2023 Dual Tachyon
+/* Copyright 2025 muzkr https://github.com/muzkr
+ * Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +20,18 @@
 
 #include <stdbool.h>
 
-bool UART_IsCommandAvailable(void);
-void UART_HandleCommand(void);
+enum
+{
+#if defined(ENABLE_UART)
+    UART_PORT_UART,
+#endif
+#if defined(ENABLE_USB)
+    UART_PORT_VCP,
+#endif
+};
+
+bool UART_IsCommandAvailable(uint32_t Port);
+void UART_HandleCommand(uint32_t Port);
 
 #endif
 
