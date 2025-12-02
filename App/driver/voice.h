@@ -26,12 +26,12 @@ extern uint8_t gVoiceBufReadIndex;
 extern uint8_t gVoiceBufWriteIndex;
 extern uint8_t gVoiceBufLen;
 
-static inline void VOCIE_BUF_ForwardReadIndex()
+static inline void VOICE_BUF_ForwardReadIndex()
 {
     gVoiceBufReadIndex = (1 + gVoiceBufReadIndex) % VOICE_BUF_CAP;
 }
 
-static inline void VOCIE_BUF_ForwardWriteIndex()
+static inline void VOICE_BUF_ForwardWriteIndex()
 {
     gVoiceBufWriteIndex = (1 + gVoiceBufWriteIndex) % VOICE_BUF_CAP;
 }

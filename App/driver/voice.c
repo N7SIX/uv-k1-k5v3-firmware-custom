@@ -97,7 +97,7 @@ void VOICE_Start()
     if (gVoiceBufLen > 0)
     {
         memcpy(DAC_Buf, gVoiceBuf[gVoiceBufReadIndex], VOICE_BUF_SIZE);
-        VOCIE_BUF_ForwardReadIndex();
+        VOICE_BUF_ForwardReadIndex();
         gVoiceBufLen--;
     }
     else
@@ -110,7 +110,7 @@ void VOICE_Start()
                gVoiceBuf[gVoiceBufReadIndex], //
                VOICE_BUF_SIZE                 //
         );
-        VOCIE_BUF_ForwardReadIndex();
+        VOICE_BUF_ForwardReadIndex();
         gVoiceBufLen--;
     }
     else
@@ -141,7 +141,7 @@ void DMA1_Channel2_3_IRQHandler()
         if (gVoiceBufLen > 0)
         {
             memcpy(DAC_Buf, gVoiceBuf[gVoiceBufReadIndex], VOICE_BUF_SIZE);
-            VOCIE_BUF_ForwardReadIndex();
+            VOICE_BUF_ForwardReadIndex();
             gVoiceBufLen--;
         }
         else
@@ -158,7 +158,7 @@ void DMA1_Channel2_3_IRQHandler()
                    gVoiceBuf[gVoiceBufReadIndex], //
                    VOICE_BUF_SIZE                 //
             );
-            VOCIE_BUF_ForwardReadIndex();
+            VOICE_BUF_ForwardReadIndex();
             gVoiceBufLen--;
         }
         else

@@ -306,7 +306,7 @@ static void LoadVoiceSamples()
     {
         gVoiceBuf[gVoiceBufWriteIndex][i] = VOICE_SAMPLES[Buf[i]];
     }
-    VOCIE_BUF_ForwardWriteIndex();
+    VOICE_BUF_ForwardWriteIndex();
     gVoiceBufLen++;
 }
 
