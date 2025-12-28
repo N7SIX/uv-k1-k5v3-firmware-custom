@@ -70,7 +70,7 @@
                 "ENABLE_NAVIG_LEFT_RIGHT": true,
                 "ENABLE_SWD": false,
                 "VERSION_STRING_1": "v0.22",
-                "VERSION_STRING_2": "v4.3.2"
+                "VERSION_STRING_2": "v7.6.0"
             }
         },
         {
@@ -175,7 +175,7 @@
             }
         },
         {
-            "name": "Fusion",
+            "name": "DX1ARM",
             "inherits": "default",
             "cacheVariables": {
                 "ENABLE_SPECTRUM": true,
@@ -188,8 +188,8 @@
                 "ENABLE_FEAT_F4HWN_GMRS_FRS_MURS": true,
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": true,
                 "ENABLE_SWD": true,
-                "EDITION_STRING": "Fusion",
-                "TARGET": "f4hwn.fusion"
+                "EDITION_STRING": "DX1ARM",
+                "TARGET": "n7six.dx1arm-k1"
             }
         }
     ],
@@ -219,8 +219,8 @@
             "configurePreset": "Game"
         },
         {
-            "name": "Fusion",
-            "configurePreset": "Fusion"
+            "name": "DX1ARM",
+            "configurePreset": "DX1ARM"
         }
     ]
 }

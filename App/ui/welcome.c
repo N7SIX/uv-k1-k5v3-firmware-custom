@@ -94,7 +94,7 @@ void UI_DisplayWelcome(void)
         {
             if(strlen(WelcomeString0) == 0 && strlen(WelcomeString1) == 0)
             {
-                strcpy(WelcomeString0, "WELCOME");
+                strcpy(WelcomeString0, "73 Mabuhay!");
                 strcpy(WelcomeString1, WelcomeString2);
             }
             else if(strlen(WelcomeString0) == 0 || strlen(WelcomeString1) == 0)
