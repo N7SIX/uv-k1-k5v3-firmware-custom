@@ -15,6 +15,7 @@
  */
 
 #include <string.h>
+#include "driver/backlight.h"
 
 #include "app/chFrScanner.h"
 #ifdef ENABLE_FMRADIO
@@ -33,6 +34,8 @@
 #include "ui/helper.h"
 #include "ui/ui.h"
 #include "ui/status.h"
+
+extern bool gBackLight;
 
 #ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
 #ifndef ENABLE_FEAT_F4HWN_DEBUG
@@ -238,7 +241,7 @@ void UI_DisplayStatus()
         src = gFontLight;
         size = sizeof(gFontLight);
     }
-    #ifdef ENABLE_FEAT_F4HWN_CHARGING_C
+#ifdef ENABLE_FEAT_F4HWN_CHARGING_C
     else if (gChargingWithTypeC) {
         src = BITMAP_USB_C;
         size = sizeof(BITMAP_USB_C);
@@ -265,7 +268,7 @@ void UI_DisplayStatus()
 
         case 1:    // voltage
             const uint16_t voltage = (gBatteryVoltageAverage <= 999) ? gBatteryVoltageAverage : 999; // limit to 9.99V
-            sprintf(str, "%u.%02u", voltage / 100, voltage % 100);
+            sprintf(str, "%u.%02uV", voltage / 100, voltage % 100);
             break;
 
         case 2:     // percentage
