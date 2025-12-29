@@ -651,7 +651,9 @@ void UI_DisplayMenu(void)
             }
             else
             {
-                sprintf(String, "%s\n%sW", gSubMenu_TXP[gSubMenuSelection], gSubMenu_SET_PWR[gSubMenuSelection - 1]);
+                // N77SIX, In this fork, gSubMenu_TXP usually contains strings like "LOW", "MID", "HIGH"
+    // or specific wattage like "0.5W", "1.0W", etc.
+    sprintf(String, "Power\n%s", gSubMenu_TXP[gSubMenuSelection]);
             }
             break;
 
