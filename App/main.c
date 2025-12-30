@@ -78,7 +78,7 @@ void Main(void)
     SYSTICK_Init();
     BOARD_Init();
 
-    boot_counter_10ms = 250;   // 2.5 sec
+    boot_counter_10ms = 600;   // 6 sec
 
 #ifdef ENABLE_UART
     UART_Init();
@@ -205,35 +205,47 @@ void Main(void)
     {
         FUNCTION_Select(FUNCTION_POWER_SAVE);
 
-        if (gEeprom.BACKLIGHT_TIME < 61) // backlight is not set to be always on
-            BACKLIGHT_TurnOff();    // turn the backlight OFF
+        if (gEeprom.BACKLIGHT_TIME < 61) 
+            BACKLIGHT_TurnOff();
         else
-            BACKLIGHT_TurnOn();     // turn the backlight ON
+            BACKLIGHT_TurnOn();
 
         gReducedService = true;
-    }
-    else
+    } 
+    else 
     {
+        // --- START OF BOOT SCREEN ---
         UI_DisplayWelcome();
-
         BACKLIGHT_TurnOn();
 
-#ifdef ENABLE_FEAT_F4HWN
-        if (gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_NONE && gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_SOUND)
-#else
-        if (gEeprom.POWER_ON_DISPLAY_MODE != POWER_ON_DISPLAY_MODE_NONE)
-#endif
-        {   // 2.55 second boot-up screen
-            while (boot_counter_10ms > 0)
+        // 1. Skippable delay loop
+        for (int i = 0; i < 600; i++)
+        {
+            if (KEYBOARD_Poll() != KEY_INVALID || GPIO_IsPttPressed())
             {
-                if (KEYBOARD_Poll() != KEY_INVALID)
-                {   // halt boot beeps
-                    boot_counter_10ms = 0;
-                    break;
-                }
+                break; 
             }
-            RADIO_SetupRegisters(true);
+            SYSTEM_DelayMs(10);
         }
+
+        // 2. Wait for the user to RELEASE the button first
+        while (KEYBOARD_Poll() != KEY_INVALID || GPIO_IsPttPressed())
+        {
+            SYSTEM_DelayMs(10);
+        }
+
+        // 3. Small "breathing" delay for the hardware
+        SYSTEM_DelayMs(100);
+
+        // Wait for button release
+        while (KEYBOARD_Poll() != KEY_INVALID || GPIO_IsPttPressed())
+        {
+            SYSTEM_DelayMs(10);
+        }
+
+        // Finalize boot
+        boot_counter_10ms = 0;
+        RADIO_SetupRegisters(true);
 
 #ifdef ENABLE_PWRON_PASSWORD
         if (gEeprom.POWER_ON_PASSWORD < 1000000)
@@ -242,7 +254,6 @@ void Main(void)
             UI_DisplayLock();
             bIsInLockScreen = false;
 
-            // 500ms
             for (int i = 0; i < 50;)
             {
                 i = (GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT) && KEYBOARD_Poll() == KEY_INVALID) ? i + 1 : 0;
@@ -255,17 +266,12 @@ void Main(void)
 #endif
 
         BOOT_ProcessMode(BootMode);
-
-        // GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
-
         gUpdateStatus = true;
 
 #ifdef ENABLE_VOICE
         {
             uint8_t Channel;
-
             AUDIO_SetVoiceID(0, VOICE_ID_WELCOME);
-
             Channel = gEeprom.ScreenChannel[gEeprom.TX_VFO];
             if (IS_MR_CHANNEL(Channel))
             {
@@ -282,7 +288,7 @@ void Main(void)
 #ifdef ENABLE_NOAA
         RADIO_ConfigureNOAA();
 #endif
-    }
+    } // <--- THIS BRACE CLOSES THE 'ELSE' BLOCK
 
     /*
     #ifdef ENABLE_FEAT_F4HWN_RESUME_STATE
