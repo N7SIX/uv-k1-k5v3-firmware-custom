@@ -40,6 +40,13 @@
 #include "inputbox.h"
 #include "menu.h"
 #include "ui.h"
+#ifndef AUTHOR_STRING_2
+    #define AUTHOR_STRING_2 "N7SIX"
+#endif
+
+#ifndef VERSION_STRING_2
+    #define VERSION_STRING_2 "v7.6.0" 
+#endif
 
 
 const t_menu_item MenuList[] =
