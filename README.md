@@ -357,6 +357,7 @@ Many thanks to various people:
 - @Ismo OH2FTG
 - [OneOfEleven](https://github.com/OneOfEleven)
 - @d1ced95
+- [Armel, F4HWN](https://github.com/armel)
 - and others I forget
 
 ## License
