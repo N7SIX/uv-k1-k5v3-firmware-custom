@@ -272,6 +272,6 @@ Left display    Right display
 
 ---
 
-**Document Version**: 1.0 (Firmware 7.6.0+)  
-**Last Updated**: February 2026  
+**Document Version**: 1.1 (Firmware 7.6.4br3+, v7.6.0+)  
+**Last Updated**: March 2026  
 **For**: UV-K1 Series & UV-K5 V3 ApeX Edition

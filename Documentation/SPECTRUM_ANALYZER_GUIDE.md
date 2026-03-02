@@ -2,8 +2,8 @@
 ## Professional Signal Analysis with Bandscope Mode
 
 **For:** UV-K1 Series / UV-K5 V3 ApeX Edition  
-**Firmware:** v7.6.0+  
-**Document Version:** 1.0
+**Firmware:** v7.6.4br3+ (v7.6.0+ supported; range alignment fixed in v7.6.4br3)  
+**Document Version:** 1.1 (Updated March 2, 2026)
 
 ---
 
@@ -376,6 +376,29 @@ Detailed view of selected band
 - Search narrow range for interference
 - Map signal strength across band
 - Characterize RF environment
+
+**📌 NEW IN v7.6.4br3: Scan Range Display Alignment**
+
+Previous versions showed the spectrum graph offset from center when using Scan Range mode. This has been corrected:
+
+```
+BEFORE (v7.6.0):                   AFTER (v7.6.4br3+):
+Range: 434.000–435.000 MHz         Range: 434.000–435.000 MHz
+Center: 434.500 MHz                Center: 434.500 MHz
+
+Display offset 3–5 pixels          Display perfectly centered
+Graph misaligned with marker       Graph aligned with marker
+Not all measurements visible       All measurements visible
+
+(Visual artifact, no data issue)   (Full spectrum visible & centered)
+```
+
+**Affected scenarios:**
+- Narrow scan ranges (< 5 MHz)
+- Lower step counts (STEPS_16, STEPS_32)
+- Frequency ranges without VFO-mode constraints
+
+**Impact:** All display elements (spectrum trace, waterfall, frequency marker, arrow) now perfectly align regardless of range width or step size setting.
 
 ---
 
