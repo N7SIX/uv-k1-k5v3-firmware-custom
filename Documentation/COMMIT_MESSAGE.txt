@@ -55,3 +55,14 @@ Files Changed:
 - App/driver/st7565.c
 - App/board.c
 - App/driver/adc.c
+
+
+---
+
+**Upcoming v7.6.4br4 spectrum enhancements (new commit):**
+- Added EEPROM persistence for spectrum settings (step, zoom, offset,
+  bandwidth, threshold, dB range, scan delay, backlight) with CRC check.
+- Improved AutoTriggerLevel: baseline initialization, asymmetric up/down
+  step sizes to prevent threshold drift from strong close‑range signals.
+- Retained ±600 kHz default frequency offset and made it persistent.
+- Minor refactor and documentation updates.

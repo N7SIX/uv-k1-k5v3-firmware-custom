@@ -1,4 +1,64 @@
 # UV-K1 SERIES / UV-K5 V3 APEX EDITION
+## Technical Release Notes — Firmware v7.6.4br4
+
+**Release Date:** March 03, 2026  
+**Build Target:** UV-K1 Series, UV-K5 V3  
+**Build Variant:** ApeX Edition  
+**MCU Platform:** PY32F071 (ARM Cortex-M0+)
+
+---
+
+## EXECUTIVE SUMMARY
+
+Firmware v7.6.4br4 continues the spectrum analyzer improvements introduced in
+v7.6.4br3 by adding persistent state and polishing the automatic trigger
+algorithm.  Users no longer have to re‑configure step size, zoom, offset or
+bandwidth after power‑cycles, and a close‑range strong signal can no longer
+render the receiver deaf to the next packet.
+
+**Primary Focus Areas:**
+- ✅ **State Persistence:** Step Size, Zoom, Frequency Offset, Bandwidth,
+  RSSI threshold, dB range, scan delay and backlight state stored in EEPROM
+  with CRC validation.
+- ✅ **Auto‑Trigger Algorithm:** Asymmetric up/down adjustment with neutral
+  baseline prevents drift after a single strong spike and recovers quickly.
+- ✅ **Defaults Retained:** ±600 kHz offset remains default and is now saved.
+- ✅ **No Flash Penalty:** Features implemented within existing firmware budget.
+
+---
+
+## WHAT'S NEW IN v7.6.4br4
+
+### 🟢 PERSISTENT SPECTRUM SETTINGS
+- 16‑byte EEPROM region at address `0x1E80` reserved for spectrum state.
+- On exit the following fields are packed, checksummed, and written to flash:
+  step size, zoom count, frequency offset, listen/bandwidth mode,
+  trigger level, dB min/max, scan delay, backlight state.
+- On startup the data is validated and restored; invalid/corrupt storage
+  reverts to safe defaults.
+- Implementation encapsulated in `SPECTRUM_SaveSettings()` /
+  `SPECTRUM_LoadSettings()`; called from `DeInitSpectrum()` and
+  `APP_RunSpectrum()` respectively.
+
+### 🔧 AUTO‑TRIGGER REFINEMENT & DRIFT FIX
+- `AutoTriggerLevel()` now initializes the trigger to a fixed baseline (150)
+  when first run instead of using the first scan peak.
+- Upward adjustments remain gradual (+1 per scan) while downward adjustments
+  occur up to −3 per scan, allowing rapid recovery after the strong signal
+  disappears.
+- RSSI_MAX_VALUE sentinel handled specially to avoid runaway thresholds when
+  automatic squelch is enabled.
+- Prevents desensitization during close‑range testing and improves robustness
+  across bursty traffic.
+
+### 🔄 OTHER IMPROVEMENTS
+- Frequency offset value stays independent of step/zoom changes (completed in
+  7.6.4br3) and is now stored persistently.
+- Default offset ±600 kHz remains, and is preserved by persistence logic.
+- Minor refactor: new EEPROM constants in `spectrum.c`, documentation updated.
+
+---
+
 ## Technical Release Notes — Firmware v7.6.4br3
 
 **Release Date:** March 02, 2026  

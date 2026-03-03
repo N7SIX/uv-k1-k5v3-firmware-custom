@@ -153,5 +153,31 @@ The spectrum graph is implemented with extensive professional features: smoothin
 
 ---
 
-**For detailed implementation notes**, see [RELEASE_NOTES.md](RELEASE_NOTES.md) section "v7.6.4br3 CRITICAL SPECTRUM ANALYZER FIXES".
+**For detailed implementation notes**, see [RELEASE_NOTES.md](RELEASE_NOTES.md) section "v7.6.4br4" for the latest changes or "v7.6.4br3 CRITICAL SPECTRUM ANALYZER FIXES" for the previous release.
+
+---
+
+## v7.6.4br4 Additions
+
+The following refinements were added in the minor br4 update:
+
+* **Persistent spectrum state.** A 16‑byte EEPROM record now remembers
+  step size, zoom count, offset, bandwidth mode, RSSI threshold, dB range,
+  scan delay and backlight state across power cycles. A CRC protects against
+  corruption. Firmware functions `SPECTRUM_SaveSettings()` and
+  `SPECTRUM_LoadSettings()` handle the packing/unpacking and are invoked on
+  spectrum exit/startup. The default offset (±600 kHz) and all user
+  adjustments are restored automatically.
+* **AutoTriggerLevel algorithm overhaul.** To prevent desensitization after a
+  strong close‑in signal the trigger is initialized to a neutral baseline of
+  150 (rather than the first peak) and downward adjustments are performed up to
+  three times faster than upward ones. This fixes the “drift upward on first
+  burst” issue observed during one‑foot packet tests while retaining very
+  sensitive weak‑signal detection. RSSI_MAX_VALUE sentinel handling was added
+  for compatibility with automatic squelch.
+* **Minor documentation updates** reflecting the above changes and the
+  increased default frequency offset, which is now also saved.
+
+All previous analyses and low‑risk items remain valid; the spectrum module is
+production‑ready with these additional enhancements.
 
