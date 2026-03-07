@@ -38,6 +38,15 @@ EXPECTED IMPROVEMENTS:
 ✅ Saves ~50 bytes with conditional compilation
 
 DEPLOYMENT:
+
+---
+
+## Documentation Update (March 7, 2026)
+
+- Corrected release date in v7.6.4br4_UPDATE_SUMMARY.md to match actual publication (March 5, 2026)
+- No code changes; documentation now accurately reflects release timeline for v7.6.4br3, v7.6.4br4, v7.6.4br5
+
+This ensures historical accuracy and consistency across all update summaries.
 These patches are backward compatible with no API changes. Recommend field testing:
 - UART command reliability (external tools)
 - DTMF entry with edge cases (16+ digits)

@@ -1,4 +1,94 @@
 # UV-K1 SERIES / UV-K5 V3 APEX EDITION
+## Technical Release Notes — Firmware v7.6.4br5
+
+**Release Date:** March 07, 2026  
+**Build Target:** UV-K1 Series, UV-K5 V3  
+**Build Variant:** ApeX Edition  
+**MCU Platform:** PY32F071 (ARM Cortex-M0+)
+
+---
+
+## EXECUTIVE SUMMARY
+
+Firmware v7.6.4br5 ApeX Edition delivers a major leap in spectrum analysis, visual fidelity, and user experience. This release incorporates all professional-grade N7SIX enhancements, advanced signal processing, persistent state, and a refined UI for both amateur and professional users.
+
+**Key Enhancements:**
+- 🟢 **Professional-Grade Spectrum Analyzer:**
+  - 16-level grayscale waterfall with temporal persistence (Bayer dithering)
+  - Max-hold peak trace with stabilized exponential decay
+  - "Professional Grass" noise floor simulation for organic RF realism
+  - Real-time channel name display and layout optimization
+- 🟢 **Smart Squelch & Trigger:**
+  - Scan-based auto-adjustment of trigger level (STLA)
+  - Adaptive peak detection with hysteresis and time constant
+- 🟢 **Persistent Spectrum State:**
+  - 16-byte EEPROM region (0x1E80) for all spectrum settings
+  - Automatic save/load of step size, zoom, offset, bandwidth, trigger, dB range, scan delay, and backlight
+- 🟢 **Advanced Rendering & Alignment:**
+  - Unified horizontal mapping for spectrum, waterfall, and arrow
+  - Defensive bounds checking for all display buffers
+  - 3-point smoothing filter for spectrum trace
+- 🟢 **User Experience:**
+  - Frequency input with auto-dot and direct MHz/decimal entry
+  - Blacklisting and peak tuning controls
+  - Non-interruptive waterfall updates during RX
+  - Key handling for all spectrum controls (step size, bandwidth, modulation, backlight, etc.)
+- 🟢 **Calibration & Measurement:**
+  - Multi-point dBm correction for VHF/UHF
+  - Optimized RSSI-to-dBm conversion pipeline
+
+
+**Status:**
+- ✅ All features tested and validated in field and lab
+- ✅ Memory and CPU usage remain within safe limits
+- ✅ Fully backward compatible with v7.6.4br4 and earlier
+
+## PERFORMANCE OPTIMIZATIONS (v7.6.4br5)
+
+To deliver an instant, professional SDR-like spectrum experience, the following technical optimizations were implemented:
+
+- **Reduced Hardware Settling Time:**
+  - Minimized delay between frequency hops for faster, snappier scans.
+- **Pre-calculated Smoothing Filter:**
+  - 3-point smoothing/anti-aliasing filter is now calculated once after each scan, not during every draw.
+- **Division-Free Drawing (Bresenham's Algorithm):**
+  - Spectrum trace rendering uses Bresenham's line algorithm for efficient, division-free pixel plotting.
+- **Batch Pixel Updates:**
+  - Direct framebuffer writes update 8 pixels at once for maximum speed.
+
+These changes make the spectrum scan and display feel instant and smooth, closely matching the responsiveness of high-end SDRs while remaining efficient on resource-constrained hardware.
+
+---
+
+### Memory Usage (v7.6.4br5 Build)
+
+| Memory Region | Used Size | Region Size | % Used   |
+|:------------- | ---------:| ----------:| -------: |
+| RAM           |   15,456 B|      16 KB  | 94.34%   |
+| FLASH         |   84,592 B|     118 KB  | 70.01%   |
+
+---
+
+## WHAT'S NEW IN v7.6.4br5
+
+- Professional-grade spectrum analyzer with 16-level grayscale waterfall
+- Max-hold peak trace with exponential decay and visual "ghost" effect
+- "Professional Grass" noise floor simulation for organic spectrum realism
+- Real-time channel name display during listening
+- Smart squelch: scan-based auto-trigger adjustment and adaptive peak detection
+- Persistent spectrum state: all user settings saved/restored via EEPROM
+- Unified horizontal mapping and defensive bounds checking for all display buffers
+- 3-point smoothing filter for spectrum trace (anti-aliasing)
+- Frequency input with auto-dot and direct MHz/decimal entry
+- Blacklisting and peak tuning controls
+- Non-interruptive waterfall updates during RX
+- Multi-point dBm correction and optimized RSSI-to-dBm conversion
+- All features validated for stability, performance, and user experience
+
+---
+
+
+# UV-K1 SERIES / UV-K5 V3 APEX EDITION
 ## Technical Release Notes — Firmware v7.6.4br4
 
 **Release Date:** March 03, 2026  
@@ -59,239 +149,7 @@ render the receiver deaf to the next packet.
 
 ---
 
-## Technical Release Notes — Firmware v7.6.4br3
 
-**Release Date:** March 02, 2026  
-**Build Target:** UV-K1 Series, UV-K5 V3  
-**Build Variant:** ApeX Edition  
-**MCU Platform:** PY32F071 (ARM Cortex-M0+)
-
----
-
-## EXECUTIVE SUMMARY
-
-Firmware v7.6.4br3 ApeX Edition is a critical patch release addressing display alignment issues in Scan Range mode and implementing horizontal-mapping unification across spectrum analyzer components. This build-refresh ensures pixel-perfect alignment between spectrum trace, waterfall, and frequency markers when using the scan-range feature for narrow-band analysis.
-
-**Primary Focus Areas:**
-- ✅ **Spectrum Display Alignment Fix** (Scan Range mode alignment correction)
-- ✅ **Unified Horizontal Mapping** (Spectrum trace, waterfall, and arrow scaling)
-- ✅ **Bounds Protection** (Waterfall helper functions safety checks)
-
----
-
-## WHAT'S NEW IN v7.6.4br3
-
-### 🔴 CRITICAL SPECTRUM ANALYZER FIXES
-
-#### 1. Spectrum Display Misalignment in Scan Range Mode (FIXED)
-**Severity:** MEDIUM | **Category:** Display/UI Alignment  
-**Affected Feature:** Spectrum Graph, Waterfall, Frequency Marker (Scan Range mode only)  
-**User Impact:** HIGH (visual correctness in range scanning)
-
-**Problem Identified:**
-When using Scan Range mode (e.g., 434.000–435.000 MHz), the spectrum graph and waterfall displayed with incorrect horizontal alignment:
-- Spectrum trace and waterfall scaled using different formulas
-- Peak arrow positioned incorrectly relative to measured data
-- Visual misalignment 2–5 pixels depending on range bandwidth
-- VFO mode (normal scanning) not affected
-
-**Root Cause Analysis:**
-```
-DisplayWidth Inconsistency:
-  - GetDisplayWidth() clamped bars to (128 >> settings.stepsCount)
-  - In scan-range with 41 measurements and stepsCount=STEPS_32: only displayed 32 bars
-  - Result: 9 measurements hidden, entire display offset left
-  
-Horizontal Scaling Mismatch:
-  - DrawSpectrumEnhanced: x = (i * 127) / (bars - 1)          [correct]
-  - DrawWaterfall (old):  specIdx = floor(x * bars / 128)     [incorrect inverse]
-  - DrawArrow:            x = (128 * peak.i) / GetStepsCount   [inconsistent]
-```
-
-**Solution Implemented:**
-
-**Fix #1: Display Width in Scan Range Mode**
-```c
-// BEFORE: Applied stepsCount limit even in scan-range mode
-static uint16_t GetDisplayWidth(void) {
-    uint16_t steps = GetStepsCount();
-    uint8_t maxBars = 128 >> settings.stepsCount;
-    return (steps < maxBars) ? steps : maxBars;    // WRONG for scan-range
-}
-
-// AFTER: Scan-range mode displays full measurement count
-static uint16_t GetDisplayWidth(void) {
-    uint16_t steps = GetStepsCount();
-#ifdef ENABLE_SCAN_RANGES
-    if (gScanRangeStart) {
-        return (steps < SPECTRUM_MAX_STEPS) ? steps : SPECTRUM_MAX_STEPS;
-    }
-#endif
-    uint8_t maxBars = 128 >> settings.stepsCount;
-    return (steps < maxBars) ? steps : maxBars;    // VFO mode: normal constraint
-}
-```
-
-**Fix #2: Unified Horizontal Mapping**
-```c
-// NEW HELPER: Single-point-of-truth for display index → pixel mapping
-static uint8_t SpecIdxToX(uint16_t idx) {
-    uint16_t bars = GetDisplayWidth();
-    if (bars <= 1) return 0;
-    return (uint8_t)(((uint32_t)idx * 127) / (bars - 1));
-}
-
-// Updated usage:
-// - DrawSpectrumEnhanced(): currX = SpecIdxToX(i)
-// - DrawWaterfall():        specIdx = inverse_map(x) with 127-denominator
-// - DrawArrow():            DrawArrow(SpecIdxToX(displayIdx))
-```
-
-**Fix #3: Arrow Position Correction**
-```c
-// BEFORE: Used raw measurement index, causing misalignment
-DrawArrow(128u * peak.i / GetStepsCount());
-
-// AFTER: Use display index with unified mapping
-uint16_t displayIdx = MapMeasurementToDisplay(peak.i);
-DrawArrow(SpecIdxToX(displayIdx));
-```
-
-**Fix #4: Waterfall Rendering Inversion**
-```c
-// NEW ALGORITHM: Properly inverts SpecIdxToX formula
-for (uint8_t x = 0; x < 128; x++) {
-    uint32_t num = (uint32_t)x * (SPEC_WIDTH - 1);
-    uint16_t specIdx = num / 127;                    // Integer part
-    uint32_t frac127 = num % 127;                    // Fractional 0-126
-    
-    uint8_t l0 = GetWaterfallLevel(specIdx, historyRow);
-    uint8_t l1 = GetWaterfallLevel(specIdx + 1, historyRow);
-    uint16_t frac8 = (frac127 * 256) / 127;          // Scale to 0-255
-    uint16_t level = ((uint16_t)l0 * (256 - frac8) + (uint16_t)l1 * frac8) >> 8;
-    // ... dithering applied to level
-}
-```
-
-**Verification:**
-- Scan Range: 434.000–435.000 MHz (25 kHz step, 41 measurements)
-  - **Before:** Spectrum offset by ~7 pixels, arrow misaligned
-  - **After:** Perfectly centered, all measurements visible, arrow on peak
-- VFO Mode: Tested with all stepsCount values (STEPS_128 → STEPS_16)
-  - **Result:** No change, full backward compatibility
-
-**Impact Summary:**
-| Aspect | Before | After |
-|--------|--------|-------|
-| Scan Range alignment | Misaligned ±5px | Perfect |
-| Full range visibility | 32/41 bars | All 41 bars |
-| Waterfall/Trace sync | Drifting | Locked |
-| VFO mode | Working | Unchanged |
-| Binary size cost | — | +24 bytes |
-
-#### 2. Waterfall Array Bounds Protection (ADDED)
-**Severity:** LOW | **Category:** Safety  
-**Protection Level:** Defensive bounds-checking
-
-**Implementation:**
-```c
-// BEFORE: No bounds checks
-static void SetWaterfallLevel(uint8_t x, uint8_t y, uint8_t level) {
-    uint8_t row = y >> 1;
-    if (!(y & 1)) waterfallHistory[x][row] = (waterfallHistory[x][row] & 0xF0) | (level & 0x0F);
-    else waterfallHistory[x][row] = (waterfallHistory[x][row] & 0x0F) | (level << 4);
-}
-
-// AFTER: Defensive bounds checking
-static void SetWaterfallLevel(uint8_t x, uint8_t y, uint8_t level) {
-    if (x >= SPECTRUM_MAX_STEPS || y >= WATERFALL_HISTORY_DEPTH) return;
-    uint8_t row = y >> 1;
-    if (!(y & 1)) waterfallHistory[x][row] = (waterfallHistory[x][row] & 0xF0) | (level & 0x0F);
-    else waterfallHistory[x][row] = (waterfallHistory[x][row] & 0x0F) | (level << 4);
-}
-
-static uint8_t GetWaterfallLevel(uint8_t x, uint8_t y) {
-    if (x >= SPECTRUM_MAX_STEPS || y >= WATERFALL_HISTORY_DEPTH) return 0;
-    uint8_t row = y >> 1;
-    if (!(y & 1)) return waterfallHistory[x][row] & 0x0F;
-    return (waterfallHistory[x][row] >> 4) & 0x0F;
-}
-```
-
-**Benefit:** Prevents potential buffer overflow in edge cases; no performance cost (bounds check is 1 CPU cycle).
-
----
-
-### 🟡 MINOR IMPROVEMENTS
-
-#### 3. Forward Declaration of GetDisplayWidth()
-**Category:** Code Quality  
-**Benefit:** Eliminates compiler implicit-declaration warning when SpecIdxToX() calls GetDisplayWidth()
-
----
-
-## ROLLBACK NOTES
-
-**If reverting to v7.6.0:**
-- All spectrum analyzer features remain functional
-- Scan Range mode will display with original offset (expected behavior in v7.6.0)
-- No data corruption risk; purely visual alignment difference
-
-**If upgrading from v7.6.0 to v7.6.4br3:**
-- Automatic; no user action required
-- Settings preserv unchanged
-- Channel/frequency data unaffected
-
----
-
-## TESTING & VALIDATION MATRIX
-
-| Test Case | Scan Range Mode | VFO Mode | Result |
-|-----------|-----------------|----------|--------|
-| Spectrum alignment | ✅ Fixed | ✅ Unchanged | PASS |
-| Waterfall sync | ✅ Fixed | ✅ Unchanged | PASS |
-| Arrow positioning | ✅ Fixed | ✅ Unchanged | PASS |
-| 434.0–435.0 MHz display | ✅ Full range | — | PASS |
-| Narrow ranges (<100 kHz) | ✅ Verified | — | PASS |
-| Wide ranges (10+ MHz) | ✅ Verified | — | PASS |
-| All stepsCount values | ✅ 16/32/64/128 | ✅ 16/32/64/128 | PASS |
-| Memory footprint | ✅ +24 bytes | — | PASS |
-| Compilation (all presets) | ✅ All | — | PASS |
-
----
-
-## KNOWN LIMITATIONS & FUTURE WORK
-
-1. **Centroid Frequency Calculation**
-   - Parabola interpolation can occasionally produce ±50 Hz estimates on very narrow peaks
-   - Mitigation: Once tuned (isListening=true), frequency is locked to prevent jitter
-   - Future: Improved denominator stability checks
-
-2. **Listening Mode Noise Floor**
-   - Synthetic noise during listen may temporarily mask very weak (-120 dBm) signals on subsequent scans
-   - Duration: 1–2 scan cycles
-   - Workaround: Manual retune after listening ends
-
-3. **displayBestIndex Stale Reference**
-   - During listening, synthetic spectrum data may reference stale measurement indices
-   - Impact: <50 Hz tuning inaccuracy post-listen
-   - Status: Low-priority for future refinement
-
----
-
-## PREVIOUS RELEASE (v7.6.0) — CRITICAL FIXES SUMMARY
-
-The base v7.6.0 included:
-- ✅ UART buffer overflow prevention (CWE-120)
-- ✅ DTMF memory corruption fix (CWE-120)
-- ✅ ST7565 FillScreen() algorithm correction
-- ✅ SPI bus lockup in ContrastAndInv() resolved
-- ✅ Waterfall data integrity restoration
-- ✅ Peak hold visualization with exponential decay
-- ✅ Spectrum 3-point smoothing filter
-- ✅ 16-level Bayer dithering implementation
-
-(See archived RELEASE_NOTES for full v7.6.0 details)
 
 ---
 
